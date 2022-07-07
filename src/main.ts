@@ -58,6 +58,7 @@ const renderLists = (lists: List[]) => {
 const lists: List[] = setupLists();
 
 const onDragComplete = (event: dragEndEvent) => {
+  console.log(event);
 };
 
 renderLists(lists);
