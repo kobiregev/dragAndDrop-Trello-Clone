@@ -11,18 +11,21 @@ export default function setupDnd() {
   addGlobalEventListner("pointerdown", "[data-draggable]", (event) => {
     const selectedItem = event.target as HTMLElement;
     const itemClone = selectedItem.cloneNode(true) as HTMLElement;
+    const ghost = selectedItem.cloneNode() as HTMLElement;
     const offset = setupDragItems(
       selectedItem,
       itemClone,
+      ghost,
       event as PointerEvent
     );
-    setupDragEvent(selectedItem, itemClone, offset);
+    setupDragEvent(selectedItem, itemClone, ghost, offset);
   });
 }
 
 function setupDragEvent(
   selectedItem: HTMLElement,
   itemClone: HTMLElement,
+  ghost: HTMLElement,
   offset: offset
 ) {
   const pointerMoveFunction = (event: PointerEvent) => {
@@ -33,8 +36,7 @@ function setupDragEvent(
     "pointerup",
     () => {
       document.removeEventListener("pointermove", pointerMoveFunction);
-      selectedItem.classList.remove(HIDE);
-      itemClone.remove();
+      stopDrag(selectedItem, itemClone, ghost);
     },
     { once: true }
   );
@@ -43,6 +45,7 @@ function setupDragEvent(
 function setupDragItems(
   selectedItem: HTMLElement,
   itemClone: HTMLElement,
+  ghost: HTMLElement,
   event: PointerEvent
 ): offset {
   const { clientX, clientY } = event as PointerEvent;
@@ -56,8 +59,12 @@ function setupDragItems(
   itemClone.style.width = `${originalItemRect.width}px`;
   itemClone.classList.add("dragging");
   positionClone(itemClone, event as PointerEvent, offset);
-
   document.body.append(itemClone);
+
+  ghost.style.height = `${originalItemRect.height}px`;
+  ghost.classList.add("ghost");
+  ghost.innerHTML = "";
+  selectedItem.parentElement?.insertBefore(ghost, selectedItem);
 
   return offset;
 }
@@ -69,4 +76,14 @@ function positionClone(
 ) {
   itemClone.style.top = `${pointerPosition.clientY - offset.y}px`;
   itemClone.style.left = `${pointerPosition.clientX - offset.x}px`;
+}
+
+function stopDrag(
+  selectedItem: HTMLElement,
+  itemClone: HTMLElement,
+  ghost: HTMLElement
+) {
+  selectedItem.classList.remove(HIDE);
+  itemClone.remove();
+  ghost.remove();
 }
