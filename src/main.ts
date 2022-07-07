@@ -1,9 +1,13 @@
-import setupDnd from "./dragAndDrop";
+import setupDnd from "./dragAndDrop/dragAndDrop";
+import { dragEndEvent } from "./dragAndDrop/types";
 import "./style.css";
-
-setupDnd();
-
 const app = document.querySelector<HTMLDivElement>("#app")!;
+
+const onDragComplete = (event: dragEndEvent) => {
+  console.log(event);
+};
+
+setupDnd(onDragComplete);
 
 // app.innerHTML = `
 // <div class="lanes">

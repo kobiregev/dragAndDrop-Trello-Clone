@@ -1,13 +1,9 @@
+import { dragEndEvent, offset } from "./types";
 import addGlobalEventListner from "./utils/addGlobalEventListener";
 
 const HIDE = "hide";
 
-export type offset = {
-  x: number;
-  y: number;
-};
-
-export default function setupDnd() {
+export default function setupDnd(onDragEnd: (event: dragEndEvent) => any) {
   addGlobalEventListner("pointerdown", "[data-draggable]", (event) => {
     const selectedItem = event.target as HTMLElement;
     const itemClone = selectedItem.cloneNode(true) as HTMLElement;
@@ -18,7 +14,7 @@ export default function setupDnd() {
       ghost,
       event as PointerEvent
     );
-    setupDragEvents(selectedItem, itemClone, ghost, offset);
+    setupDragEvents(selectedItem, itemClone, ghost, offset, onDragEnd);
   });
 }
 
@@ -26,22 +22,26 @@ function setupDragEvents(
   selectedItem: HTMLElement,
   itemClone: HTMLElement,
   ghost: HTMLElement,
-  offset: offset
+  offset: offset,
+  onDragEnd: Function
 ) {
   const pointerMoveFunction = (event: PointerEvent) => {
     positionClone(itemClone, event, offset);
     const dropZone = getDropZone(event.target as Element);
     if (dropZone == null) return;
+    // Gets closet child of dropzone
     const closetChild = Array.from(dropZone.children).find((child) => {
       const rect = child.getBoundingClientRect();
       return event.clientY < rect.top + rect.height / 2;
     });
+
     if (closetChild != null) {
       dropZone.insertBefore(ghost, closetChild);
     } else {
       dropZone.append(ghost);
     }
   };
+
   document.addEventListener("pointermove", pointerMoveFunction);
   document.addEventListener(
     "pointerup",
@@ -49,6 +49,12 @@ function setupDragEvents(
       document.removeEventListener("pointermove", pointerMoveFunction);
       const dropZone = getDropZone(ghost);
       if (dropZone) {
+        onDragEnd({
+          startZone: getDropZone(selectedItem),
+          endZone: dropZone,
+          dragElement: selectedItem,
+          index: Array.from(dropZone.children).indexOf(ghost),
+        });
         dropZone.insertBefore(selectedItem, ghost);
       }
       stopDrag(selectedItem, itemClone, ghost);
