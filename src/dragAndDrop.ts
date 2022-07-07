@@ -18,11 +18,11 @@ export default function setupDnd() {
       ghost,
       event as PointerEvent
     );
-    setupDragEvent(selectedItem, itemClone, ghost, offset);
+    setupDragEvents(selectedItem, itemClone, ghost, offset);
   });
 }
 
-function setupDragEvent(
+function setupDragEvents(
   selectedItem: HTMLElement,
   itemClone: HTMLElement,
   ghost: HTMLElement,
@@ -30,12 +30,27 @@ function setupDragEvent(
 ) {
   const pointerMoveFunction = (event: PointerEvent) => {
     positionClone(itemClone, event, offset);
+    const dropZone = getDropZone(event.target as Element);
+    if (dropZone == null) return;
+    const closetChild = Array.from(dropZone.children).find((child) => {
+      const rect = child.getBoundingClientRect();
+      return event.clientY < rect.top + rect.height / 2;
+    });
+    if (closetChild != null) {
+      dropZone.insertBefore(ghost, closetChild);
+    } else {
+      dropZone.append(ghost);
+    }
   };
   document.addEventListener("pointermove", pointerMoveFunction);
   document.addEventListener(
     "pointerup",
     () => {
       document.removeEventListener("pointermove", pointerMoveFunction);
+      const dropZone = getDropZone(ghost);
+      if (dropZone) {
+        dropZone.insertBefore(selectedItem, ghost);
+      }
       stopDrag(selectedItem, itemClone, ghost);
     },
     { once: true }
@@ -86,4 +101,12 @@ function stopDrag(
   selectedItem.classList.remove(HIDE);
   itemClone.remove();
   ghost.remove();
+}
+
+function getDropZone(element: Element) {
+  if (element.matches("[data-drop-zone]")) {
+    return element;
+  } else {
+    return element.closest("[data-drop-zone]");
+  }
 }
